@@ -19,6 +19,7 @@ public class Ichecker
             InvalidKeySpecException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException, UnrecoverableKeyException, SignatureException, CertificateException, KeyStoreException
     {
         
+        
         /**
          *  parameter definitions
          */
@@ -95,7 +96,7 @@ public class Ichecker
             String hashedPass = CreateCert.hashPassword(password);
 
             //  decodes encoded private key file
-            CreateCert.decodePriKeyFile(hashedPass);
+            CreateCert.decodePriKeyFile(priKey, hashedPass);
 
             // verifies the password entered by the user
             // if verification fails, program exits

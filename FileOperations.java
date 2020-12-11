@@ -53,6 +53,45 @@ public class FileOperations
         br.close();
         return content;
     }
+    
+	/**
+	 *  reads registry file except last line (which is signature) to authenticate signature
+	 *  @return content
+	  * @throws IOException 
+	 */
+	 public static String getContent() throws IOException
+	 {
+		 int lineCount = getRegFileSize();
+	     BufferedReader br = new BufferedReader(new FileReader(regPath));
+	     String line = null;
+	     StringBuilder sb = new StringBuilder();
+	     
+	     while((line = br.readLine()) != null)
+	     {
+	    	 if (lineCount == 0)
+	    		 break;
+	    	 
+	    	 sb.append(line);
+	    	 lineCount--;
+	     }
+	     
+	     String content = sb.toString();
+	     br.close();
+	     
+	     return content;
+	 }
+     
+	public static int getRegFileSize() throws IOException
+	{
+		int lineCount = 0;
+		BufferedReader br = new BufferedReader(new FileReader(regPath));
+	    String line = null;
+	    while ((line = br.readLine()) != null)
+	    	lineCount++;
+	    br.close();
+	     
+	    return (lineCount-1);
+	}
 
     private static void write(String data, String file) throws IOException
     {
