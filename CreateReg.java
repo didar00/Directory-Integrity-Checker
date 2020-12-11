@@ -1,23 +1,25 @@
 import java.text.SimpleDateFormat;
 import java.util.Base64;
 import java.util.Date;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+
 import java.security.MessageDigest;
 import java.math.BigInteger;
 import java.security.InvalidKeyException;
-import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
-import java.security.Signature;
 import java.security.SignatureException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.io.File;
-import java.io.FileInputStream;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+
 
 public class CreateReg
 {
@@ -80,8 +82,11 @@ public class CreateReg
      * @throws SignatureException 
      * @throws InvalidKeyException 
      * @throws UnrecoverableKeyException 
+     * @throws BadPaddingException 
+     * @throws IllegalBlockSizeException 
+     * @throws NoSuchPaddingException 
      */
-    public void createRegFile(String folderPath, String hashMode) throws IOException, NoSuchAlgorithmException, UnrecoverableKeyException, InvalidKeyException, SignatureException, CertificateException, KeyStoreException
+    public void createRegFile(String folderPath, String hashMode) throws IOException, NoSuchAlgorithmException, UnrecoverableKeyException, InvalidKeyException, SignatureException, CertificateException, KeyStoreException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException
     {
         File folder = new File(folderPath);
         File[] files = folder.listFiles();
@@ -141,33 +146,30 @@ public class CreateReg
 
     }
 
-    private String sign(String content, String mode) throws SignatureException, IOException, NoSuchAlgorithmException, CertificateException, KeyStoreException, UnrecoverableKeyException, InvalidKeyException
+    private String sign(String content, String mode) throws SignatureException, IOException, NoSuchAlgorithmException, CertificateException, KeyStoreException, UnrecoverableKeyException, InvalidKeyException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException
     {
         PrivateKey privateKey = CreateCert.getPrivateKey();
         
-        FileInputStream is = new FileInputStream("ichecker.jks");
-
-        KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        keystore.load(is, "111111".toCharArray());
+        // gets the hash of the content in registry file as binary string with the specified mode
+        String hashedMessage = getHash(content, mode);
         
-        Signature signature = null;
+        // converts binary string to byte array to encrypt
+        byte[] hashedByte = new BigInteger(hashedMessage, 2).toByteArray();
         
-        if (mode.equals("MD5"))
-        	signature = Signature.getInstance("MD5withRSA");
-        else if (mode.equals("SHA-256"))
-        	signature = Signature.getInstance("SHA256withRSA");
+        /**
+         * encrypts the hashed content to obtain signature
+         */
+        Cipher cipher = Cipher.getInstance("RSA");
+        cipher.init(Cipher.ENCRYPT_MODE, privateKey);
+        byte[] digitalSignature = cipher.doFinal(hashedByte);
         
-        signature.initSign(privateKey);
-
-        byte[] messageBytes = Files.readAllBytes(Paths.get(regPath));
-
-        signature.update(messageBytes);
-
-        byte[] digitalSignature = signature.sign();
+        // returns Base64 representation of the signature
         String signatureStr = new String(Base64.getEncoder().encode(digitalSignature));
         return signatureStr;
 
     }
+    
+
 
 
     public static String getHash(String content, String mode) throws NoSuchAlgorithmException, UnsupportedEncodingException

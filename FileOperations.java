@@ -3,6 +3,7 @@ import java.io.BufferedWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Base64;
 
 public class FileOperations
 {
@@ -93,6 +94,37 @@ public class FileOperations
 	    return (lineCount-1);
 	}
 
+	
+    /**
+    *  reads registry file
+    *  @return signature
+     * @throws IOException 
+    */
+    public static byte[] getSignature() throws IOException
+    {
+    	int lineCount = getRegFileSize();
+        BufferedReader br = new BufferedReader(new FileReader(regPath));
+        String line = null;
+        String signature = null;
+        
+        while((line = br.readLine()) != null)
+        {
+        	if (lineCount == 0)
+        	{
+        		signature = line;
+        	}
+        	lineCount--;
+        }
+        br.close();
+        
+        
+        byte[] signByte = Base64.getDecoder().decode(signature);
+    
+        return signByte;
+        
+    }
+    
+    
     private static void write(String data, String file) throws IOException
     {
         BufferedWriter bw = new BufferedWriter(new FileWriter(file, true));
