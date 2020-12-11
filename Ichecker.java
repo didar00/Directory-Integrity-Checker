@@ -95,7 +95,7 @@ public class Ichecker
             String hashedPass = CreateCert.hashPassword(password);
 
             //  decodes encoded private key file
-            CreateCert.decodePriKeyFile(hashedPass);
+            CreateCert.decodePriKeyFile(priKey, hashedPass);
 
             // verifies the password entered by the user
             // if verification fails, program exits

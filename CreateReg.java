@@ -162,6 +162,7 @@ public class CreateReg
         byte[] messageBytes = Files.readAllBytes(Paths.get(regPath));
 
         signature.update(messageBytes);
+
         byte[] digitalSignature = signature.sign();
         String signatureStr = new String(Base64.getEncoder().encode(digitalSignature));
         return signatureStr;
