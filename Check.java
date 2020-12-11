@@ -2,19 +2,23 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.security.InvalidKeyException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.Signature;
 import java.security.SignatureException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.text.SimpleDateFormat;
-import java.util.Base64;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 
 public class Check
 {
@@ -31,27 +35,27 @@ public class Check
 		this.hashMode = hashMode;
 	}
 
-	public void signatureVerification() throws SignatureException, InvalidKeyException, NoSuchAlgorithmException, UnrecoverableKeyException, KeyStoreException, CertificateException, IOException
+	public void signatureVerification() throws SignatureException, InvalidKeyException, NoSuchAlgorithmException, UnrecoverableKeyException, KeyStoreException, CertificateException, IOException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException
 	{
-		Signature signature = null;
+		// gets public key
 		PublicKey publicKey = CreateCert.getPublicKey();
-		PrivateKey privateKey = CreateCert.getPrivateKey();
 		
-        if (hashMode.equals("MD5"))
-        	signature = Signature.getInstance("MD5withRSA");
-        else if (hashMode.equals("SHA-256"))
-        	signature = Signature.getInstance("SHA256withRSA");
-        
-        signature.initSign(privateKey);
-        
-        byte[] messageBytes = (FileOperations.getContent()).getBytes();
-        signature.update(messageBytes);
-        byte[] digitalSignature = signature.sign();
-        
-        signature.initVerify(publicKey);
-        signature.update(messageBytes);
-        
-        boolean verified = signature.verify(digitalSignature);
+		// gets the signature
+		byte[] signature = FileOperations.getSignature();
+		
+		
+		// decrypts the signature at the end of the registry file
+		Cipher cipher = Cipher.getInstance("RSA");
+		cipher.init(Cipher.DECRYPT_MODE, publicKey);
+		byte[] decryptedMessageHash = cipher.doFinal(signature);
+		
+		String regContent = FileOperations.getContent();
+		String hashedContent = CreateReg.getHash(regContent, hashMode);
+		// convert hashed message to byte array in order to compare with signature hash value
+		byte[] hashedContentByte = new BigInteger(hashedContent, 2).toByteArray();
+		
+		// compares two hash values
+        boolean verified = Arrays.equals(decryptedMessageHash, hashedContentByte);
     
         
         if (verified)
@@ -68,31 +72,7 @@ public class Check
 	}
 	
 	
-    /**
-    *  reads registry file
-    *  @return signature
-     * @throws IOException 
-    */
-    private byte[] getSignature() throws IOException
-    {
-        BufferedReader br = new BufferedReader(new FileReader(regFilePath));
-        String line = null;
-        String temp = null;
-        String signature = null;
-        
-        while((line = br.readLine()) != null)
-        {
-        	temp = line;
-        	if ((temp = br.readLine()) == null)
-        		signature = line;
-        }
-        br.close();
-        
-        byte[] signByte = Base64.getDecoder().decode(signature);
-    
-        return signByte;
-        
-    }
+
 
 	
 	
@@ -106,7 +86,7 @@ public class Check
 
         for (File file : files)
         {
-        	System.out.println(file.getAbsolutePath());
+        	
             if (file.isFile())
             {
                 // gets absolute path of the file
@@ -167,7 +147,7 @@ public class Check
         	{
         		String timestamp = new SimpleDateFormat("dd.MM.yyyy HH.mm.ss").format(new Date());
                 StringBuilder event = new StringBuilder(timestamp);
-                event.append(": ").append(" The directory is checked and no change is detected!\n");
+                event.append(": ").append("The directory is checked and no change is detected!\n");
                 FileOperations. updateLogFile(event.toString()); 
         	}
         }
@@ -188,8 +168,7 @@ public class Check
 		HashMap<String, String> fileMap = new HashMap<String, String>();
 		int lineCount = FileOperations.getRegFileSize();
 		BufferedReader br = new BufferedReader(new FileReader(regFilePath));
-        String line, temp;
-        line = temp = null;
+        String line = null;
         
         while((line = br.readLine()) != null)
         {
@@ -197,10 +176,10 @@ public class Check
         		break;
     		String[] tokens = line.split(" ");
         	fileMap.put(tokens[0], tokens[1]);
-        	System.out.println(tokens[0] + " " + tokens[1]);
+        	
         	lineCount--;
         }
-        System.out.println("&/_&&&&&&&&&&&&&&&&&&&&&&");
+
         br.close();
         return fileMap;
 	}
