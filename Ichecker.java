@@ -68,18 +68,6 @@ public class Ichecker
             // encode private key file with user password
             CreateCert.encodePriKeyFile(hashedPass);
             
-            
-/*
-            String password2 = sc.nextLine();
-            
-
-            // MD5 hash operation is applied to password
-            String hashedPass2 = cc.hashPassword(password2);
-
-            //  decodes encoded private key file
-            cc.decodePriKeyFile(hashedPass2);
-*/
-
             sc.close();
         }
         else if (function.equals("createReg")) // creates registry file

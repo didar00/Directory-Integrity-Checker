@@ -19,6 +19,8 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -81,7 +83,7 @@ public class CreateCert
 	    throws InvalidKeySpecException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
 	    IllegalBlockSizeException, BadPaddingException, UnsupportedEncodingException
 	{
-	// transform password to char array to use in encryption
+		// transform password to char array to use in encryption
 		char[] ch = password.toCharArray(); 
 		
 		
@@ -124,9 +126,9 @@ public class CreateCert
 	
 	private static String decode(String text, String password)
 	    throws InvalidKeySpecException, NoSuchAlgorithmException, NoSuchPaddingException, InvalidKeyException,
-	    IllegalBlockSizeException, BadPaddingException, UnsupportedEncodingException
+	    IllegalBlockSizeException, BadPaddingException, UnsupportedEncodingException, IOException
 	{
-	// transform password to char array to use in encryption
+		// transform password to char array to use in encryption
 		char[] ch = password.toCharArray(); 
 		
 		
@@ -139,8 +141,19 @@ public class CreateCert
 		Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
 		cipher.init(Cipher.DECRYPT_MODE, secret);
 		byte[] decoded = Base64.getDecoder().decode(text.getBytes("UTF-8"));
-		byte[] plainbyte = cipher.doFinal(decoded);
-		String last = new String(plainbyte, "UTF-8");
+		String last = null;
+		try {
+			byte[] plainbyte = cipher.doFinal(decoded);
+			last = new String(plainbyte, "UTF-8");
+			
+		} catch (BadPaddingException e) {
+			// time stamp in format of dd-MM-yyyy HH:mm:ss
+            String timestamp = new SimpleDateFormat("dd.MM.yyyy HH.mm.ss").format(new Date());
+            String event = timestamp + ": Wrong password attempt!\n";
+            FileOperations.updateLogFile(event);
+            // exists program
+            System.exit(0);
+		}
 		return last;
 	}
 	public static final byte[] salt = {-98, -24, 122, -27, -106, -97, -4, -15};
